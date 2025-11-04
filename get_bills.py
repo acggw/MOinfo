@@ -6,13 +6,13 @@ from bs4 import BeautifulSoup
 
 HOUSE_BILLS_LINK = "https://documents.house.mo.gov/xml/251-BillList.XML"
 
-def get_bills(datetime: str) -> [notificaton]:
+def get_bills(datetime: str, current_time: str) -> [notificaton]:
     Notifications = []
     #Notifications.extend(get_house_bills(datetime))
     Notifications.extend(get_senate_bills(datetime))
     return Notifications
 
-def get_house_bills(last_ran: str) -> [notificaton]:
+def get_house_bills(last_ran: str, current_time: str) -> [notificaton]:
     UPDATED = 5
     BILL_LINK = 4
     ACTION = 1
@@ -45,7 +45,7 @@ def get_house_bills(last_ran: str) -> [notificaton]:
     return Notifications
 
 
-def get_senate_bills(datetime: str) -> [notificaton]:
+def get_senate_bills(datetime: str, current_time: str) -> [notificaton]:
     LINK = "https://www.senate.mo.gov/25Info/BTS_Web/Daily.aspx?SessionType=R&ActionDate="
 
     data = requests.get(LINK + datetime).text
