@@ -1,18 +1,18 @@
 import pandas as pd 
-from notifications import notificaton
+from notification_class import notification
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
 HOUSE_BILLS_LINK = "https://documents.house.mo.gov/xml/251-BillList.XML"
 
-def get_bills(datetime: str, current_time: str) -> [notificaton]:
+def get_bills(datetime: str, current_time: str= "today") -> [notification]:
     Notifications = []
     #Notifications.extend(get_house_bills(datetime))
     Notifications.extend(get_senate_bills(datetime))
     return Notifications
 
-def get_house_bills(last_ran: str, current_time: str) -> [notificaton]:
+def get_house_bills(last_ran: str, current_time: str = "today") -> [notification]:
     UPDATED = 5
     BILL_LINK = 4
     ACTION = 1
@@ -40,12 +40,12 @@ def get_house_bills(last_ran: str, current_time: str) -> [notificaton]:
         bill_string = info.find("CurrentBillString").text
 
         msg = "Update on Bill " + bill_string + " " + title + " - " + description + " - " + last_action[ACTION]
-        Notifications.append(notificaton(msg))
+        Notifications.append(notification(msg))
     
     return Notifications
 
 
-def get_senate_bills(datetime: str, current_time: str) -> [notificaton]:
+def get_senate_bills(datetime: str, current_time: str= "today") -> [notification]:
     LINK = "https://www.senate.mo.gov/25Info/BTS_Web/Daily.aspx?SessionType=R&ActionDate="
 
     data = requests.get(LINK + datetime).text
@@ -55,7 +55,7 @@ def get_senate_bills(datetime: str, current_time: str) -> [notificaton]:
     bills = []
     for dl in bill_elements:
         text = " ".join(dl.get_text(separator=" ", strip=True).split())
-        bills.append(notificaton(text))
+        bills.append(notification(text))
 
     return bills
 
@@ -65,7 +65,7 @@ def get_xml_data(link: str):
 
     if(str(data) != "<Response [200]>"):
         #log
-        print("Error fetching data from " + ALL_BILLS_LINK)
+        print("Error fetching data from " + link)
         print(str(data))
         return
     

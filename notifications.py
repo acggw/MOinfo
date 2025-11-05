@@ -21,20 +21,7 @@ import pandas as pd
 from io import StringIO
 import os
 from get_bills import get_bills  # Make sure get_bills.py is in the same directory
-
-
-class notification:
-    """Represents a message or alert to be sent or logged."""
-
-    def __init__(self, message: str):
-        self.message = message
-
-    def __str__(self):
-        return self.message
-
-    def __repr__(self):
-        return f"notification({self.message!r})"
-
+from notification_class import notification
 
 def send_email(email_address: str, bill_notification: notification, df: pd.DataFrame = None) -> bool:
     """
@@ -86,8 +73,8 @@ def main():
     - Demonstrates attaching a DataFrame for email reports.
     """
     # Example date format: '11/04/2025'
-    date_str = "11/04/2025"
-    recipient = "recipient@example.com"  # Replace with actual recipient email
+    date_str = "9/10/2025"
+    recipient = "lucasjamesnavarro@gmail.com"  # Replace with actual recipient email
 
     # Fetch notifications
     notifications_list = get_bills(date_str)
