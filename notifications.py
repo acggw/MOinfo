@@ -20,7 +20,7 @@ from email.message import EmailMessage
 import pandas as pd
 from io import StringIO
 import os
-from get_bills import get_bills  # Make sure get_bills.py is in the same directory
+from xml_unpacker import get_bills  # Make sure get_bills.py is in the same directory
 from notification_class import notification
 
 def send_email(email_address: str, bill_notification: notification, df: pd.DataFrame = None) -> bool:
