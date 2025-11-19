@@ -4,7 +4,7 @@ from notification_class import notification
 import config
 
 consumer = KafkaConsumer(
-    "bill_information_stale",
+    "bill_action_retreived",
     bootstrap_servers=config.KAFKA_SERVER,
     auto_offset_reset="earliest",
     group_id="missouri_senate",
@@ -26,4 +26,4 @@ for msg in consumer:
     send_data = {
         "guid": data["last_action_guid"],
     }
-    producer.send("Bill Processed", send_data)
+    producer.send("bill_processed", send_data)

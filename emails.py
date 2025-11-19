@@ -20,14 +20,13 @@ from email.message import EmailMessage
 import pandas as pd
 from io import StringIO
 import os
-from xml_unpacker import get_bills  # Make sure get_bills.py is in the same directory
 from notification_class import notification
 from kafka import KafkaConsumer, KafkaProducer
 import json
 import config
 
 consumer = KafkaConsumer(
-    "Notification Prepared",
+    "notification_prepared",
     bootstrap_servers=config.KAFKA_SERVER,
     auto_offset_reset="earliest",
     group_id="emails",
@@ -80,7 +79,7 @@ def send_email(email_address: str, bill_notification: notification, df: pd.DataF
         return False
 
 
-def main():
+'''def main():
     """
     Main function:
     - Fetches the latest bills using get_bills().
@@ -97,7 +96,7 @@ def main():
     # Send each notification individually (or batch via summary DataFrame)
     for n in notifications_list:
         send_email(recipient, n)  # Sends each message individually
-
+'''
 for msg in consumer:
     data = msg.value
     if("email" in data.keys() and "email" in data["notification_vector"]):

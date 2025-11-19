@@ -69,7 +69,7 @@ def get_house_bills(last_ran: str, current_time: str = "today") -> [notification
             "subjects": ["PLACEHOLDER"] #Bills have some predefined Categories
         }
         #Send all relevant bill data to the action processor
-        producer.send("Bill Action Retreived", action_data)
+        producer.send("bill_action_retreived", action_data)
     
     return Notifications
 

@@ -4,7 +4,7 @@ from notification_class import notification
 import config
 
 consumer = KafkaConsumer(
-    "Bill Action Retreived",
+    "bill_processed",
     bootstrap_servers=config.KAFKA_SERVER,
     auto_offset_reset="earliest",
     group_id="website_updates_1",

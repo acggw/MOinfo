@@ -4,10 +4,10 @@ from notification_class import notification
 import config
 
 consumer = KafkaConsumer(
-    "BBill Processed",
+    "bill_processed",
     bootstrap_servers=config.KAFKA_SERVER,
     auto_offset_reset="earliest",
-    group_id="Notification_Handler_1",
+    group_id="notification_handler_1",
     value_deserializer=lambda v: json.loads(v.decode("utf-8"))
 )
 producer = KafkaProducer(
@@ -25,4 +25,4 @@ for msg in consumer:
             "notification_vector": ["email"],
             "email": "lucasjamesnavarro@gmail.com"
         }
-        producer.send("Notification Prepared", send_data)
+        producer.send("notification_prepared", send_data)
