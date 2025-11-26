@@ -6,6 +6,10 @@ def get_bill(session, chamber, under, session_num, bill_id):
     bill = session.get(Bill, (chamber, under, session_num, bill_id))
     return bill
 
+def get_version(session, chamber, under, session_num, bill_id, version):
+    version = session.get(Bill, (chamber, under, session_num, bill_id, version))
+    return version
+
 class Bill(Base):
     __tablename__ = "bills"
 
@@ -36,6 +40,9 @@ class Bill(Base):
     #tags = relationship("tags")
 
     last_updates = mapped_column(Date)
+
+    def __str__(self):
+        return self.id + " in the " + self.chamber + " : " + self.short_title
 
 class Sponsored_By(Base):
     __tablename__ = "sponsored_by"
@@ -79,6 +86,13 @@ class Bill_Version(Base):
     summary_link = mapped_column(String)
 
     links = relationship("Version_Link", back_populates="bill_version")
+
+def print_bills(session):
+    print("Printing Bills")
+    all_bills = session.query(Bill).all()
+
+    for bill in all_bills:
+        print(bill)
 
 
 

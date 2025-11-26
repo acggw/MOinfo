@@ -8,7 +8,7 @@ import config
 from session import engine
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from tables.bills import Bill, Sponsored_By, Bill_Version, get_bill
+from tables.bills import Bill, Sponsored_By, Bill_Version, get_bill, get_version
 from tables.bill_actions import Bill_Action, get_action, get_guid_prefix
 from tables.government_names import govt_names
 from datetime import datetime
@@ -46,7 +46,8 @@ def extract_part(url: str) -> str:
 
 def get_house_bills(last_ran: str) -> [notification]:
 
-    Notifications = []
+    new_actions = []
+    new_versions = []
 
     bills = get_xml_data(HOUSE_BILLS_LINK)
     with Session(engine) as session:
@@ -56,8 +57,6 @@ def get_house_bills(last_ran: str) -> [notification]:
             bill_id = extract_part(bill[BILL_LINK].text)
 
             data = fetch_bill_data(bill)
-
-            print(data)
 
             if(data == None):
                 continue
@@ -85,15 +84,22 @@ def get_house_bills(last_ran: str) -> [notification]:
                     "description":""
                     }
 
-            update_bill(session, bill, bill_session, bill_id, **bill_fields)
+            update_bill(session, bill, **bill_fields)
 
-            update_versions(session, bill, bill_session, bill_id)
+            new_versions.extend(update_versions(session, bill, bill_session, bill_id))
 
             for action in data.findall("Action"):
-                update_action(session, action, bill_session, bill_id)
+                new_actions.append(update_action(session, action, bill_session, bill_id))
 
             #Add Sponsors
             #add_sponsors(session, data, bill_id, bill_session)
+        session.commit()
+        for action in new_actions:
+            producer.send("bill_action_retreived", action)
+
+        for version in new_versions:
+            producer.send("bill_version_retreived", version)
+
 
 
 def add_sponsors(session, data, bill_id, bill_session):
@@ -119,17 +125,23 @@ def fetch_bill_data(bill):
         print("Data fetched from " + bill[BILL_LINK].text)
         return ET.fromstring(data.text)[0]
 
-def update_bill(sql_session, bill, bill_session, bill_id, **fields):
-    old_bill_info = get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, bill_session, bill_id)
+def update_bill(sql_session, bill, **fields):
+    old_bill_info = get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, fields["session"], fields["id"])
 
     if(old_bill_info == None):
         new_bill = Bill(**fields)
 
         sql_session.add(new_bill)
+        sql_session.flush()
+
+        return True
+        #print("Bill " + new_bill.id + " added to database")
+        #print(get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, fields["session"], fields["id"]))
     
     else:
+        #print("Bill " + old_bill_info.id + " already exists")
         #this migt not be needed
-        pass
+        return False
         #update bill
         #for key, value in fields.items():
         #    setattr(bill, key, value)
@@ -154,7 +166,11 @@ def update_action(sql_session, action, bill_session, bill_id):
         )
         sql_session.add(new_action)
 
-    producer.send("bill_action_retreived", guid)
+    return (govt_names.MO_LOWER_HOUSE_NAME,
+            govt_names.MO_GOVERNMENT_NAME,
+            bill_session,
+            bill_id,
+            guid)
 
 def update_versions(sql_session, bill, bill_session, bill_id):
     texts = bill.findall("BillText")
@@ -162,12 +178,16 @@ def update_versions(sql_session, bill, bill_session, bill_id):
     
     assert len(texts) == len(summaries), "Not every text has a summary for a bill"
 
+    new_versions = []
+
     for text in texts:
         version = text.find("BillVersionSort").text
         text_link = text.find("BillTextLink").text
         for summary in summaries:
             if(summary.find("BillVersionSort").text != version):
                 continue 
+            if(None != get_version(sql_session, govt_names.MO_LOWER_HOUSE_NAME, govt_names.MO_GOVERNMENT_NAME, bill_session, bill_id, version)):
+                continue
             summary_link = summary.find("SummaryTextLink").text
             bill_version = Bill_Version(
                 bill_chamber = govt_names.MO_LOWER_HOUSE_NAME,
@@ -181,13 +201,17 @@ def update_versions(sql_session, bill, bill_session, bill_id):
                 summary_link = summary_link
             )
             sql_session.add(bill_version)
+            new_versions.append((govt_names.MO_LOWER_HOUSE_NAME, govt_names.MO_GOVERNMENT_NAME, bill_session, bill_id, version))
+                                               
+    return new_versions   
+    '''
             producer.send("new_bill_version", {"bill_chamber" : govt_names.MO_LOWER_HOUSE_NAME,
                 "under" : govt_names.MO_GOVERNMENT_NAME,
                 "bill_session" : bill_session,
                 "bill_id" : bill_id,
                 "version" : version})
             
-    '''
+    
             #if(bill[UPDATED].text.split(" ")[0])
             
 
@@ -253,7 +277,6 @@ def update_versions(sql_session, bill, bill_session, bill_id):
 for msg in consumer:
     data = msg.value
     print("Getting Bills from Missouri House of Representatives...")
-    print(data)
     get_house_bills(data["last_pulled"])
     print("Bills Fetched from Missouri House of Representatives...")
 
