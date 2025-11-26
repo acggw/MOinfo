@@ -8,4 +8,11 @@ class Government(Base):
     name = mapped_column(String, primary_key=True)
     under = mapped_column(String, ForeignKey("governments.name"), primary_key=True)
 
+def print_governments(session):
+    print("Printing Governments")
+    all_govts = session.query(Government).all()
+
+    for govt in all_govts:
+        print(govt.name + " -> " + govt.under)
+
     

@@ -69,3 +69,11 @@ def get_guid_prefix(name_1=govt_names.US_GOVERNMENT_NAME,
 def get_action(session, guid):
     bill_action = session.get(Bill_Action, (guid))
     return bill_action
+
+def print_actions(session):
+    print("Printing Bill Actions")
+    all_bill_actions = session.query(Bill_Action).all()
+
+    for bill_action in all_bill_actions:
+        print(bill_action)
+
