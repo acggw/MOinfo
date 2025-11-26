@@ -29,8 +29,7 @@ def start_application(target: datetime):
             print("Getting New Updates for " + date)
 
             data = {
-                "fetch_start": last_pulled,
-                "fetch_end": date
+                "last_pulled": last_pulled,
             }
 
             producer.send("bill_information_stale", data)

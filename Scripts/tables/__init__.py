@@ -1,4 +1,4 @@
-from .bill_action_links import Bill_Action_Link
+from .links import Bill_Action_Link, Version_Link
 from .bill_actions import Bill_Action
 from .bills import Bill, Sponsored_By
 from .government import Government

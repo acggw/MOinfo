@@ -3,13 +3,13 @@ import time
 
 # List your consumer scripts
 services = [
-    "clock.py",
-    "missouri_house_retreiver.py",
-    "missouri_senate_retreiver.py",
-    "emails.py",
-    "notifications.py",
-    "process_bills.py",
-    "website_updates.py"
+    "Scripts/clock.py",
+    "Scripts/missouri_house_retreiver.py",
+    "Scripts/missouri_senate_retreiver.py",
+    "Scripts/emails.py",
+    "Scripts/notifications.py",
+    "Scripts/process_bills.py",
+    "Scripts/website_updates.py"
 ]
 
 processes = []

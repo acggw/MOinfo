@@ -7,3 +7,5 @@ class Government(Base):
 
     name = mapped_column(String, primary_key=True)
     under = mapped_column(String, ForeignKey("governments.name"), primary_key=True)
+
+    

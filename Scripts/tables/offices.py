@@ -1,5 +1,5 @@
 from sqlalchemy import String, ForeignKeyConstraint, ForeignKey, Date
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 from .base import Base
 
 class Office(Base):
@@ -37,4 +37,6 @@ class Held_Office(Base):
     end = mapped_column(Date)
 
     term_end = mapped_column(Date)
+
+    person = relationship("Person", back_populates="offices")
 
