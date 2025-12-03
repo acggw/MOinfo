@@ -7,7 +7,7 @@ def get_bill(session, chamber, under, session_num, bill_id):
     return bill
 
 def get_version(session, chamber, under, session_num, bill_id, version):
-    version = session.get(Bill, (chamber, under, session_num, bill_id, version))
+    version = session.get(Bill_Version, (chamber, under, session_num, bill_id, version))
     return version
 
 class Bill(Base):
@@ -42,7 +42,16 @@ class Bill(Base):
     last_updates = mapped_column(Date)
 
     def __str__(self):
-        return self.id + " in the " + self.chamber + " : " + self.short_title
+        return self.id + " in the " + self.chamber + " under " + self.under + " - " + self.session +  " : " + self.short_title
+    
+    def get_newest_version(self):
+        number = -1
+        version = None
+        for v in self.versions:
+            if v.version > number:
+                number = v.version
+                version = v
+        return version
 
 class Sponsored_By(Base):
     __tablename__ = "sponsored_by"
@@ -87,12 +96,56 @@ class Bill_Version(Base):
 
     links = relationship("Version_Link", back_populates="bill_version")
 
+    policy_areas = relationship("Bill_Policy_Area", back_populates="version")
+
+    def __str__(self):
+        return "Version " + str(self.version) + " : " + self.summary
+
+class Bill_Policy_Area(Base):
+    __tablename__ = "bill_policy_areas"
+    bill_chamber = mapped_column(String, primary_key=True)
+    under = mapped_column(String, primary_key=True)
+    bill_session = mapped_column(Integer, primary_key=True)
+    bill_id = mapped_column(String, primary_key=True)
+    bill_version = mapped_column(Integer, primary_key=True)
+
+    policy_area = mapped_column(String, primary_key=True)
+
+    version = relationship("Bill_Version", back_populates="policy_areas")
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['bill_chamber', 'under', 'bill_session', 'bill_id', 'bill_version'],          # columns in Child
+            ['bill_versions.bill_chamber', 'bill_versions.under', 'bill_versions.bill_session', 'bill_versions.bill_id', 'bill_versions.version']  # columns in Parent
+        ),
+    )
+
+    def __str__(self):
+        return self.policy_area
+
+
 def print_bills(session):
     print("Printing Bills")
     all_bills = session.query(Bill).all()
 
     for bill in all_bills:
         print(bill)
+        for version in bill.versions:
+            print(version)
+            for area in version.policy_areas:
+                print(area)
+
+def print_versions(session):
+    print("Printing Versions")
+    all_versions = session.query(Bill_Version).all()
+    for version in all_versions:
+        print(version)
+
+def print_policy_areas(session):
+    print("Printing Policy Areas")
+    all_areas = session.query(Bill_Policy_Area).all()
+    for area in all_areas:
+        print(area)
 
 
 

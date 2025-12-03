@@ -14,6 +14,7 @@ from tables.government_names import govt_names
 from datetime import datetime
 from tables.person import get_person_by_name
 from pdf_util import extract_from_pdf
+from classification_util import classify_bill
 
 consumer = KafkaConsumer(
     "bill_information_stale",
@@ -44,11 +45,7 @@ def extract_part(url: str) -> str:
     # Split on '-' and take the second part
     return name_without_ext.split('-', 1)[-1]
 
-def get_house_bills(last_ran: str) -> [notification]:
-
-    new_actions = []
-    new_versions = []
-
+def get_house_bills(last_ran: str):
     bills = get_xml_data(HOUSE_BILLS_LINK)
     with Session(engine) as session:
         for bill in bills:
@@ -77,30 +74,21 @@ def get_house_bills(last_ran: str) -> [notification]:
 
             bill_fields = {"chamber":govt_names.MO_LOWER_HOUSE_NAME,
                     "under":govt_names.MO_GOVERNMENT_NAME,
-                    "session":bill[SESSION_YEAR].text + "-" + bill[SESSION_CODE].text,
+                    "session":bill_session,
                     "id":data.find("BillNumber").text,
                     "short_title":short_title,
                     "long_title":long_title,
                     "description":""
                     }
 
-            update_bill(session, bill, **bill_fields)
+            bill_sql = update_bill(session, bill, **bill_fields)
 
-            new_versions.extend(update_versions(session, bill, bill_session, bill_id))
+            update_versions(session, data, bill_sql)
 
-            for action in data.findall("Action"):
-                new_actions.append(update_action(session, action, bill_session, bill_id))
+            update_actions(session, data.findall("Action"), bill_sql)
 
             #Add Sponsors
             #add_sponsors(session, data, bill_id, bill_session)
-        session.commit()
-        for action in new_actions:
-            producer.send("bill_action_retreived", action)
-
-        for version in new_versions:
-            producer.send("bill_version_retreived", version)
-
-
 
 def add_sponsors(session, data, bill_id, bill_session):
     sponsors = data.find("Sponsor")
@@ -119,91 +107,99 @@ def fetch_bill_data(bill):
     if(str(data) != "<Response [200]>"):
         #log
         print("Error fetching data from " + bill[BILL_LINK].text)
-        print(str(data))
+        #print(str(data))
     #log
     else:
         print("Data fetched from " + bill[BILL_LINK].text)
         return ET.fromstring(data.text)[0]
 
 def update_bill(sql_session, bill, **fields):
-    old_bill_info = get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, fields["session"], fields["id"])
-
+    old_bill_info = get_bill(sql_session, fields["chamber"], fields["under"], fields["session"], fields["id"])
     if(old_bill_info == None):
         new_bill = Bill(**fields)
 
         sql_session.add(new_bill)
-        sql_session.flush()
+        sql_session.commit()
 
-        return True
+        return new_bill
         #print("Bill " + new_bill.id + " added to database")
         #print(get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, fields["session"], fields["id"]))
     
     else:
         #print("Bill " + old_bill_info.id + " already exists")
         #this migt not be needed
-        return False
+        return old_bill_info
         #update bill
         #for key, value in fields.items():
         #    setattr(bill, key, value)
 
     return True
 
-def update_action(sql_session, action, bill_session, bill_id):
+def update_actions(sql_session, actions, sql_bill):
 
-    guid = int(str(get_guid_prefix(govt_names.US_GOVERNMENT_NAME, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME)) + str(action.find("Guid").text))
+    for action in actions:
+        guid = int(str(get_guid_prefix(govt_names.US_GOVERNMENT_NAME, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME)) + str(action.find("Guid").text))
 
-    old_action = get_action(sql_session, guid)
+        old_action = get_action(sql_session, guid)
 
-    #Need to handle adding links
-    if(old_action == None):
-        new_action = Bill_Action(
-            guid = guid,
-            description = action.find("Description").text,
-            bill_chamber = govt_names.MO_LOWER_HOUSE_NAME,
-            under = govt_names.MO_GOVERNMENT_NAME,
-            bill_session = bill_session,
-            bill_id = bill_id
-        )
-        sql_session.add(new_action)
+        #Need to handle adding links
+        if(old_action == None):
+            new_action = {
+                "guid" : guid,
+                "description" : action.find("Description").text,
+                "bill_chamber" : sql_bill.chamber,
+                "under" : sql_bill.under,
+                "bill_session" : sql_bill.session,
+                "bill_id" : sql_bill.id,
+            }
 
-    return (govt_names.MO_LOWER_HOUSE_NAME,
-            govt_names.MO_GOVERNMENT_NAME,
-            bill_session,
-            bill_id,
-            guid)
+            sql_session.add(Bill_Action(bill = sql_bill, **new_action))
+            sql_session.commit()
 
-def update_versions(sql_session, bill, bill_session, bill_id):
+            producer.send("bill_action_retreived", new_action)
+
+    return True
+        
+def update_versions(sql_session, bill, bill_sql):
     texts = bill.findall("BillText")
     summaries = bill.findall("BillSummary")
     
-    assert len(texts) == len(summaries), "Not every text has a summary for a bill"
+    #assert len(texts) == len(summaries), "Not every text has a summary for a bill"
 
-    new_versions = []
-
+    indexed_summaries = []
+    for summary in summaries:
+        indexed_summaries.append((summary, summary.find("BillVersionSort").text))
     for text in texts:
-        version = text.find("BillVersionSort").text
+        version = int(text.find("BillVersionSort").text)
         text_link = text.find("BillTextLink").text
-        for summary in summaries:
-            if(summary.find("BillVersionSort").text != version):
-                continue 
-            if(None != get_version(sql_session, govt_names.MO_LOWER_HOUSE_NAME, govt_names.MO_GOVERNMENT_NAME, bill_session, bill_id, version)):
-                continue
-            summary_link = summary.find("SummaryTextLink").text
-            bill_version = Bill_Version(
-                bill_chamber = govt_names.MO_LOWER_HOUSE_NAME,
-                under = govt_names.MO_GOVERNMENT_NAME,
-                bill_session = bill_session,
-                bill_id = bill_id,
-                version = version,
-                text = extract_from_pdf(text_link),
-                text_link = text_link,
-                summary = extract_from_pdf(summary_link),
-                summary_link = summary_link
-            )
-            sql_session.add(bill_version)
-            new_versions.append((govt_names.MO_LOWER_HOUSE_NAME, govt_names.MO_GOVERNMENT_NAME, bill_session, bill_id, version))
-                                               
-    return new_versions   
+
+        summary_link = None
+        for s in summaries:
+            if s[1] == version:
+                summary_link = s[0].find("SummaryTextLink").text
+        
+        if(None != get_version(sql_session, govt_names.MO_LOWER_HOUSE_NAME, govt_names.MO_GOVERNMENT_NAME, bill_sql.session, bill_sql.id, version)):
+            continue
+        
+        bill_version = {
+            "bill_chamber" : bill_sql.chamber,
+            "under" : bill_sql.under,
+            "bill_session" : bill_sql.session,
+            "bill_id" : bill_sql.id,
+            "version" : version,
+            "text" : extract_from_pdf(text_link),
+            "text_link" : text_link,
+            "summary" : extract_from_pdf(summary_link),
+            "summary_link" : summary_link,
+        }
+        bv = Bill_Version(bill = bill_sql, **bill_version)
+        sql_session.add(bv)
+        classify_bill(sql_session, bv)
+        sql_session.commit()
+        producer.send("bill_version_retreived", bill_version)
+
+    return True
+                                                 
     '''
             producer.send("new_bill_version", {"bill_chamber" : govt_names.MO_LOWER_HOUSE_NAME,
                 "under" : govt_names.MO_GOVERNMENT_NAME,

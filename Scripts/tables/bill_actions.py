@@ -15,10 +15,10 @@ class Bill_Action(Base):
 
     secondary_links = relationship("Bill_Action_Link", back_populates="bill_action")
 
-    bill_chamber = mapped_column(String)
-    under = mapped_column(String)
-    bill_session = mapped_column(String)
-    bill_id = mapped_column(String)
+    bill_chamber = mapped_column(String, nullable=False)
+    under = mapped_column(String, nullable=False)
+    bill_session = mapped_column(String, nullable=False)
+    bill_id = mapped_column(String, nullable=False)
 
     __table_args__ = (
         ForeignKeyConstraint(
@@ -29,6 +29,8 @@ class Bill_Action(Base):
 
     bill = relationship("Bill", back_populates="actions")
 
+    notifications = relationship("Notification", back_populates="bill_action")
+
     type = mapped_column(String)
 
     __mapper_args__ = {
@@ -36,6 +38,10 @@ class Bill_Action(Base):
         "polymorphic_identity": "bill_action",  # identifier for the base class itself
         "with_polymorphic": "*"          # include all subclasses when querying
     }
+   
+    def __str__(self):
+        return self.bill_id + " " + self.description
+
 
 def get_guid_prefix(name_1=govt_names.US_GOVERNMENT_NAME, 
                     name_2=govt_names.MO_GOVERNMENT_NAME, 

@@ -5,5 +5,7 @@ from .government import Government
 from .offices import Office, Held_Office
 from .person import Person
 from .vote import Vote
+from .notifications import Notification
+from .user import User
 #from .notifications import Notification
 from .base import Base
