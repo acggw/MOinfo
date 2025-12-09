@@ -8,12 +8,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import joblib
 from sklearn.svm import LinearSVC
-from .config import BILL_CLASSIFICATION_IDF_MODEL
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
+from .config import BILL_CLASSIFICATION_IDF_MODEL, BILL_BINARIZER_IDF_MODEL
 
 # -------------------------------------------------------
 # 1. Initialize PyTerrier
 # -------------------------------------------------------
-if not pt.started():
+if not pt.java.started():
     pt.init()
 
 # -------------------------------------------------------
@@ -27,11 +29,11 @@ print(ds.column_names)
 # Convert to pandas DataFrame
 df = pd.DataFrame({
     "text": ds["text"],
-    "label": ds["policy_area"]
+    "subjects": ds["legislative_subjects"]
 })
 
 # Remove missing labels
-df = df[df["label"].notna()]
+df = df[df["subjects"].notna()]
 df = df[df["text"].notna()]
 
 print("Total labeled bills:", len(df))
@@ -45,45 +47,82 @@ train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 # 4. Define a text classification pipeline
 # -------------------------------------------------------
 # You can replace the classifier with SVM, BERT embeddings, etc.
-pipeline = Pipeline([
+
+mlb = MultiLabelBinarizer()
+y_multi = mlb.fit_transform(train_df["subjects"].tolist())
+
+model = Pipeline([
     ("tfidf", TfidfVectorizer(
-        max_features=5000,
-        min_df=5,
-        max_df=0.8,
-        ngram_range=(1,2),
-        stop_words="english"
+        max_df=0.95,
+        min_df=3,
+        ngram_range=(1, 2),
     )),
-    ("clf", LinearSVC())
+    ("clf", OneVsRestClassifier(LinearSVC()))
 ])
 
-# -------------------------------------------------------
-# 5. Train model
-# -------------------------------------------------------
-print("\nTraining model...")
-pipeline.fit(train_df["text"], train_df["label"])
+#Fit Model
+model.fit(train_df["text"].tolist(), y_multi)
 
-# -------------------------------------------------------
-# 6. Evaluate
-# -------------------------------------------------------
-print("\nEvaluating...")
-preds = pipeline.predict(test_df["text"])
-print(classification_report(test_df["label"], preds))
 
-# -------------------------------------------------------
-# 7. Save model
-# -------------------------------------------------------
-joblib.dump(pipeline, BILL_CLASSIFICATION_IDF_MODEL)
-print("Saved model as bill_topic_classifier.pkl")
+#Store Model
+joblib.dump(model, BILL_CLASSIFICATION_IDF_MODEL)
+joblib.dump(mlb, BILL_BINARIZER_IDF_MODEL)
 
-# -------------------------------------------------------
-# 8. Predict topics for NEW bills
-# -------------------------------------------------------
-def predict_topic(text):
-    return pipeline.predict([text])[0]
 
-print("\nExample prediction:")
-example_text = """
-    A bill to provide funding for renewable energy development,
-    including solar power incentives and green infrastructure grants.
-"""
-print(predict_topic(example_text))
+model = joblib.load("bill_subject_model.pkl")
+mlb   = joblib.load("bill_subject_mlb.pkl")
+
+# ---------------------------------------------------------
+# Predict for entire test_df
+# ---------------------------------------------------------
+
+def predict_multi_label(model, texts):
+    """Return binary label matrix for a list of texts."""
+    scores = model.decision_function(texts)  # shape (n_samples, n_classes)
+    # Convert raw SVM scores > 0 to predictions
+    return (scores > 0).astype(int)
+
+# X_test: bill texts
+X_test = test_df["bill_text"].tolist()
+
+# y_true: ground truth subjects
+y_true = mlb.transform(test_df["legislative_subjects"])
+
+# y_pred: predicted labels
+y_pred = predict_multi_label(model, X_test)
+
+# ---------------------------------------------------------
+# Print classification metrics
+# ---------------------------------------------------------
+
+print("\n====== CLASSIFICATION REPORT ======\n")
+print(classification_report(
+    y_true,
+    y_pred,
+    target_names=mlb.classes_,
+    zero_division=0
+))
+
+# ---------------------------------------------------------
+# Produce a DataFrame with true vs predicted
+# ---------------------------------------------------------
+
+def decode_labels(binary_row):
+    """Convert binary vector to list of labels."""
+    return mlb.inverse_transform(binary_row.reshape(1, -1))[0]
+
+results_df = pd.DataFrame({
+    "bill_text": test_df["bill_text"],
+    "true_subjects": test_df["legislative_subjects"],
+    "predicted_subjects": [
+        decode_labels(y_pred[i]) for i in range(len(y_pred))
+    ]
+})
+
+print("\nPreview of prediction results:")
+print(results_df.head())
+
+# Optionally save it
+results_df.to_csv("bill_subject_predictions.csv", index=False)
+print("\nSaved results to bill_subject_predictions.csv")
+
