@@ -10,7 +10,7 @@ import joblib
 from sklearn.svm import LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
-from .config import BILL_CLASSIFICATION_IDF_MODEL, BILL_BINARIZER_IDF_MODEL
+from config import BILL_CLASSIFICATION_IDF_MODEL, BILL_BINARIZER_IDF_MODEL
 
 # -------------------------------------------------------
 # 1. Initialize PyTerrier
@@ -22,7 +22,7 @@ if not pt.java.started():
 # 2. Load bill dataset (HuggingFace)
 # -------------------------------------------------------
 print("Loading dataset...")
-ds = load_dataset("dreamproit/bill_labels_us", split="train")
+ds = load_dataset("dreamproit/bill_labels_us", split="train[:10%]")
 
 print(ds.column_names)
 
@@ -53,9 +53,9 @@ y_multi = mlb.fit_transform(train_df["subjects"].tolist())
 
 model = Pipeline([
     ("tfidf", TfidfVectorizer(
-        max_df=0.95,
-        min_df=3,
-        ngram_range=(1, 2),
+        max_df=0.80,
+        min_df=10,
+        ngram_range=(1, 1),
     )),
     ("clf", OneVsRestClassifier(LinearSVC()))
 ])
@@ -69,8 +69,8 @@ joblib.dump(model, BILL_CLASSIFICATION_IDF_MODEL)
 joblib.dump(mlb, BILL_BINARIZER_IDF_MODEL)
 
 
-model = joblib.load("bill_subject_model.pkl")
-mlb   = joblib.load("bill_subject_mlb.pkl")
+#model = joblib.load("bill_subject_model.pkl")
+#mlb   = joblib.load("bill_subject_mlb.pkl")
 
 # ---------------------------------------------------------
 # Predict for entire test_df
@@ -83,10 +83,10 @@ def predict_multi_label(model, texts):
     return (scores > 0).astype(int)
 
 # X_test: bill texts
-X_test = test_df["bill_text"].tolist()
+X_test = test_df["text"].tolist()
 
 # y_true: ground truth subjects
-y_true = mlb.transform(test_df["legislative_subjects"])
+y_true = mlb.transform(test_df["subjects"])
 
 # y_pred: predicted labels
 y_pred = predict_multi_label(model, X_test)
@@ -112,8 +112,8 @@ def decode_labels(binary_row):
     return mlb.inverse_transform(binary_row.reshape(1, -1))[0]
 
 results_df = pd.DataFrame({
-    "bill_text": test_df["bill_text"],
-    "true_subjects": test_df["legislative_subjects"],
+    "text": test_df["text"],
+    "true_subjects": test_df["subjects"],
     "predicted_subjects": [
         decode_labels(y_pred[i]) for i in range(len(y_pred))
     ]
