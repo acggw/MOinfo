@@ -5,21 +5,21 @@ from sqlalchemy import select
 from database.tables.government import Government
 import os
 from database.tables.government_names import govt_names
+from database.tables.user import create_admin
+from config.database import DATABASE_LOCATION
 
 def create_database():
     print("Creating database and tables...")
     Base.metadata.create_all(engine)
     print("Done!")
 
-def setup_united_states():
-    with Session(engine) as session:
-        us_gov = Government(
-            name = govt_names.US_GOVERNMENT_NAME,
-            under= govt_names.US_GOVERNMENT_NAME
-        )
-        session.add(us_gov)
-        setup_missouri(session)
-        session.commit()
+def setup_united_states(session):
+    us_gov = Government(
+        name = govt_names.US_GOVERNMENT_NAME,
+        under= govt_names.US_GOVERNMENT_NAME
+    )
+    session.add(us_gov)
+    setup_missouri(session)
 
 def setup_missouri(session):
     mo_gov = Government(
@@ -42,7 +42,7 @@ def setup_missouri(session):
 
 
 if __name__ == "__main__":
-    file_path = "database/database.db"
+    file_path = DATABASE_LOCATION
 
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -50,4 +50,8 @@ if __name__ == "__main__":
     else:
         print("File does not exist.")
     create_database()
-    setup_united_states()
+    with Session(engine) as session:
+        setup_united_states(session)
+        create_admin(session, "lucas", "Br!singr^sf1re", "lucasjamesnavarro@gmail.com", "314-285-2963")
+
+        session.commit()

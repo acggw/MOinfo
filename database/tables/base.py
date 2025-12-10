@@ -1,4 +1,4 @@
-from server.app import db
+from server.sql_conn import db
 
 class Base(db.Model):
-    pass
+    __abstract__ = True

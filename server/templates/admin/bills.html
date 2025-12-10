@@ -9,10 +9,10 @@
         {% for bill in bills %}
             <li>
                 <strong>{{ bill.session }}, {{ bill.chamber }}, {{ bill.under }}, {{bill.id}}</strong>
-                <h2>{{ bill.short_title}}</h2>
+                <p>{{ bill.short_title}}</p>
                 {% if bill.actions %}
                     <ul>
-                        {% for action in bil.actions %}
+                        {% for action in bill.actions %}
                             <li>{{ action.guid }} - {{ action.description }}</li>
                         {% endfor %}
                     </ul>

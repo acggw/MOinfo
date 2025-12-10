@@ -20,6 +20,8 @@ class User(Base):
 
     verified = mapped_column(String)
 
+    admin = mapped_column(String)
+
 def create_user(session, user_name, password, email, phone):
     if(session.get(User, (user_name)) != None):
         raise Errors.DUPLICATE_USER_NAME_ERROR
@@ -33,7 +35,28 @@ def create_user(session, user_name, password, email, phone):
         password_hash = generate_password_hash(password),
         email = email,
         phone = phone,
-        verified = "N/A"
+        verified = "N/A",
+        admin = "No"
+    )
+
+    session.add(user)
+    session.commit()
+
+def create_admin(session, user_name, password, email, phone):
+    if(session.get(User, (user_name)) != None):
+        raise Errors.DUPLICATE_USER_NAME_ERROR
+    if(session.query(User).filter(User.email == email).first()):
+        raise Errors.DUPLICATE_EMAIL_ERROR
+    if(session.query(User).filter(User.phone == phone).first()):
+        raise Errors.DUPLICATE_PHONE_ERROR
+    
+    user = User(
+        username = user_name,
+        password_hash = generate_password_hash(password),
+        email = email,
+        phone = phone,
+        verified = "N/A",
+        admin = "Yes"
     )
 
     session.add(user)

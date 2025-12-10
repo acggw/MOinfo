@@ -9,7 +9,7 @@
         {% for user in users %}
             <li>
                 <strong>{{ user.username }}</strong>
-                {% if username.preferences %}
+                {% if user.preferences %}
                     <ul>
                         {% for preference in user.preferences %}
                             <li>{{ preference.policy_area }} - {{ preference.importance_threshold }}</li>

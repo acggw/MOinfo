@@ -1,14 +1,13 @@
 from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
 
-from templates.auth.routes import auth_bp
-from templates.pref.routes import pref_bp
-from templates.admin.routes import admin_bp
+from server.templates.auth.routes import auth_bp
+from server.templates.pref.routes import pref_bp
+from server.templates.admin.routes import admin_bp
 
 from config.database import DATABASE_URL
+from server.sql_conn import db
 
-# Create the SQLAlchemy object globally (recommended)
-db = SQLAlchemy()
+import os
 
 def create_app():
     app = Flask(__name__)

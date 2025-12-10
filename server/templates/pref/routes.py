@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from database.tables.user import set_preference
-from server.app import db
+from server.sql_conn import db
 
 pref_bp = Blueprint("pref", __name__, template_folder="templates/pref")
 
@@ -13,7 +13,7 @@ categories = [
 @pref_bp.route("/pref", methods=["GET", "POST"])
 def preferences():
     if "username" not in session:
-        session["last_on"] = url_for("preferences")
+        session["last_on"] = url_for("pref.preferences")
         return redirect(url_for("auth.login"))
 
     if request.method == "POST":
@@ -23,6 +23,6 @@ def preferences():
         for interest, level in interests.items():
             set_preference(db.session, session["username"], interest, level)
 
-        return redirect(url_for("preferences"))
+        return redirect(url_for("pref.preferences"))
 
     return render_template("pref/pref.html", categories=categories)

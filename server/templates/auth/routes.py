@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, session, url_for
 from config.errors import Errors
 from database.tables.user import verify_user, create_user
-from server.app import db
+from server.sql_conn import db
 
 auth_bp = Blueprint("auth", __name__, template_folder="templates/auth")
 
