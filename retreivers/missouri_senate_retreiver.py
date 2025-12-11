@@ -49,7 +49,7 @@ def get_senate_bills(datetime: str, current_time: str= "today") -> [notification
             "subjects": ["PLACEHOLDER"] #Bills have some predefined Categories
         }
         #Send all relevant bill data to the action processor
-        producer.send("bill_action_retreived", action_data)
+        #producer.send("bill_action_retreived", action_data)
     return bills
 
 for msg in consumer:

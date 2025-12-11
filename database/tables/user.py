@@ -15,14 +15,16 @@ class User(Base):
     preferences = relationship("User_Preference", back_populates="user")
 
     email = mapped_column(String, unique=True)
+    email_notifications = mapped_column(Integer)
 
     phone = mapped_column(String, unique=True)
+    phone_notifications = mapped_column(Integer)
 
     verified = mapped_column(String)
 
     admin = mapped_column(String)
 
-def create_user(session, user_name, password, email, phone):
+def create_user(session, user_name, password, email, email_nots, phone, phone_nots):
     if(session.get(User, (user_name)) != None):
         raise Errors.DUPLICATE_USER_NAME_ERROR
     if(session.query(User).filter(User.email == email).first()):
@@ -34,7 +36,9 @@ def create_user(session, user_name, password, email, phone):
         username = user_name,
         password_hash = generate_password_hash(password),
         email = email,
+        email_notifications = email_nots,
         phone = phone,
+        phone_notifications = phone_nots,
         verified = "N/A",
         admin = "No"
     )
@@ -68,6 +72,13 @@ def verify_user(session, user_name, password_hash):
         return False
     if(check_password_hash(user.password_hash, password_hash)):
         return True
+    
+def user_exists(session, user_name):
+    user = session.get(User, (user_name))
+    if(user == None):
+        return False
+    else:
+        return True
 
 class User_Preference(Base):
     __tablename__ = "user_preferences"
@@ -79,7 +90,7 @@ class User_Preference(Base):
     user = relationship("User", back_populates="preferences")
 
 def set_preference(session, username, policy_area, importance):
-    if(not verify_user(session, username)):
+    if(not user_exists(session, username)):
         raise Errors.USER_NOT_FOUND_ERROR
     
     pref = session.get(User_Preference, (username, policy_area))

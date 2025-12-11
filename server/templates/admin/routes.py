@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, session, url_for
 from database.tables.user import User
-from database.tables.bills import Bill
+from database.tables.bills import Bill, get_all_policy_areas
 from server.sql_conn import db
 from sqlalchemy.orm import joinedload
 
@@ -15,3 +15,8 @@ def display_users():
 def display_bills():
     bills = Bill.query.options(joinedload(Bill.actions)).all()
     return render_template("admin/bills.html", bills=bills)
+
+@admin_bp.route("/admin/policy_areas", methods=["GET"])
+def display_policy_areas():
+    areas = get_all_policy_areas(db.session)
+    return render_template("admin/policy_areas.html", areas=areas)

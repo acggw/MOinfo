@@ -6,10 +6,9 @@ import xml.etree.ElementTree as ET
 import config.servers as config
 from database.session import engine
 from sqlalchemy.orm import Session
-from database.tables.bills import Bill, Sponsored_By, Bill_Version, get_bill, get_version
+from database.tables.bills import update_bill, Sponsored_By, Bill_Version, get_version
 from database.tables.bill_actions import Bill_Action, get_action, get_guid_prefix
 from database.tables.government_names import govt_names
-from datetime import datetime
 from database.tables.person import get_person_by_name
 from utils.pdf_util import extract_from_pdf
 from classification_models.classification_util import classify_bill
@@ -79,11 +78,13 @@ def get_house_bills(last_ran: str):
                     "description":""
                     }
 
-            bill_sql = update_bill(session, bill, **bill_fields)
+            bill_sql = update_bill(session, **bill_fields)
 
             update_versions(session, data, bill_sql)
 
             update_actions(session, data.findall("Action"), bill_sql)
+
+            print("Bill " + bill_id + " processed")
 
             #Add Sponsors
             #add_sponsors(session, data, bill_id, bill_session)
@@ -111,27 +112,7 @@ def fetch_bill_data(bill):
         print("Data fetched from " + bill[BILL_LINK].text)
         return ET.fromstring(data.text)[0]
 
-def update_bill(sql_session, bill, **fields):
-    old_bill_info = get_bill(sql_session, fields["chamber"], fields["under"], fields["session"], fields["id"])
-    if(old_bill_info == None):
-        new_bill = Bill(**fields)
 
-        sql_session.add(new_bill)
-        sql_session.commit()
-
-        return new_bill
-        #print("Bill " + new_bill.id + " added to database")
-        #print(get_bill(sql_session, govt_names.MO_GOVERNMENT_NAME, govt_names.MO_LOWER_HOUSE_NAME, fields["session"], fields["id"]))
-    
-    else:
-        #print("Bill " + old_bill_info.id + " already exists")
-        #this migt not be needed
-        return old_bill_info
-        #update bill
-        #for key, value in fields.items():
-        #    setattr(bill, key, value)
-
-    return True
 
 def update_actions(sql_session, actions, sql_bill):
 
@@ -154,7 +135,7 @@ def update_actions(sql_session, actions, sql_bill):
             sql_session.add(Bill_Action(bill = sql_bill, **new_action))
             sql_session.commit()
 
-            producer.send("bill_action_retreived", new_action)
+            producer.send("bill_action_retreived", {"guid":guid})
 
     return True
         
@@ -190,6 +171,7 @@ def update_versions(sql_session, bill, bill_sql):
             "summary" : extract_from_pdf(summary_link),
             "summary_link" : summary_link,
         }
+
         bv = Bill_Version(bill = bill_sql, **bill_version)
         sql_session.add(bv)
         classify_bill(sql_session, bv)

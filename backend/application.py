@@ -8,7 +8,8 @@ services = [
     #"retreivers/missouri_senate_retreiver.py",
     #"notifications/emails.py",
     "notifications/notifications.py",
-    "Scripts/website_updates.py"
+    "notifications/emails.py",
+    "Scripts/website_updates.py",
 ]
 
 processes = []

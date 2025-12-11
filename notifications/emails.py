@@ -20,13 +20,13 @@ from email.message import EmailMessage
 import pandas as pd
 from io import StringIO
 import os
-from notification_class import notification
 from kafka import KafkaConsumer, KafkaProducer
 import json
 import config.servers as config
+from config.notifications import EMAIL_ADDRESS, EMAIL_PASSWORD
 
 consumer = KafkaConsumer(
-    "notification_prepared",
+    "email_notification_prepared",
     bootstrap_servers=config.KAFKA_SERVER,
     auto_offset_reset="earliest",
     group_id="emails",
@@ -37,7 +37,7 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode("utf-8")  # serialize Python dict -> JSON bytes
 )
 
-def send_email(email_address: str, bill_notification: notification, df: pd.DataFrame = None) -> bool:
+def send_email(email_address: str, bill_notification: str, df: pd.DataFrame = None) -> bool:
     """
     Sends an email containing the notification message and optionally attaches a DataFrame as CSV.
 
@@ -49,24 +49,23 @@ def send_email(email_address: str, bill_notification: notification, df: pd.DataF
     Returns:
         bool: True if the email was sent successfully, False otherwise.
     """
-    sender_email = os.getenv("EMAIL_USER")
-    sender_password = os.getenv("EMAIL_PASS")
-
-    if not sender_email or not sender_password:
-        print("Missing EMAIL_USER or EMAIL_PASS environment variables.")
-        return False
+    sender_email = EMAIL_ADDRESS
+    sender_password = EMAIL_PASSWORD
 
     msg = EmailMessage()
     msg["Subject"] = "Notification"
     msg["From"] = sender_email
     msg["To"] = email_address
-    msg.set_content(str(bill_notification))
+    msg.set_content(bill_notification)
 
     # Attach DataFrame if provided
     if df is not None and not df.empty:
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
         msg.add_attachment(csv_buffer.getvalue(), subtype="csv", filename="bills.csv")
+
+    print(sender_email)
+    print(sender_password)
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
@@ -97,7 +96,9 @@ def send_email(email_address: str, bill_notification: notification, df: pd.DataF
     for n in notifications_list:
         send_email(recipient, n)  # Sends each message individually
 '''
+counter = 0
 for msg in consumer:
-    data = msg.value
-    if("email" in data.keys() and "email" in data["notification_vector"]):
-        send_email(data["email_address"], data["notification"])
+    if counter < 1:
+        data = msg.value
+        send_email(data["email"], data["content"])
+        counter +=1

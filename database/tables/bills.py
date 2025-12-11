@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Date, ForeignKeyConstraint, ForeignKey
+from sqlalchemy import Integer, String, Date, ForeignKeyConstraint, ForeignKey, select
 from sqlalchemy.orm import mapped_column, relationship
 from .base import Base
 
@@ -6,9 +6,45 @@ def get_bill(session, chamber, under, session_num, bill_id):
     bill = session.get(Bill, (chamber, under, session_num, bill_id))
     return bill
 
+def retreive_bill(session, chamber, session_num, bill_id):
+    #should be replaced with a Get when under is eliminated
+    smnt = (select(Bill)
+            .where(Bill.chamber == chamber)
+            .where(Bill.session == session_num)
+            .where(Bill.id == bill_id))
+    bill = session.execute(smnt).scalars().first()
+    return bill
+
 def get_version(session, chamber, under, session_num, bill_id, version):
     version = session.get(Bill_Version, (chamber, under, session_num, bill_id, version))
     return version
+
+def update_bill(sql_session, **fields):
+    assert "chamber" in fields
+    assert "under" in fields
+    assert "session" in fields
+    assert "id" in fields
+    old_bill_info = get_bill(sql_session, fields["chamber"], fields["under"], fields["session"], fields["id"])
+    if(old_bill_info == None):
+        new_bill = Bill(**fields)
+
+        sql_session.add(new_bill)
+        sql_session.commit()
+
+        return new_bill
+    else:
+        return old_bill_info
+    
+def print_bills(session):
+    print("Printing Bills")
+    all_bills = session.query(Bill).all()
+
+    for bill in all_bills:
+        print(bill)
+        for version in bill.versions:
+            print(version)
+            for area in version.policy_areas:
+                print(area)
 
 class Bill(Base):
     __tablename__ = "bills"
@@ -71,6 +107,12 @@ class Sponsored_By(Base):
 
     id = mapped_column(String, ForeignKey("people.id"), primary_key=True)
 
+def print_versions(session):
+    print("Printing Versions")
+    all_versions = session.query(Bill_Version).all()
+    for version in all_versions:
+        print(version)
+
 class Bill_Version(Base):
     __tablename__ = "bill_versions"
     bill_chamber = mapped_column(String, primary_key=True)
@@ -101,6 +143,16 @@ class Bill_Version(Base):
     def __str__(self):
         return "Version " + str(self.version) + " : " + self.summary
 
+def print_policy_areas(session):
+    print("Printing Policy Areas")
+    all_areas = session.query(Bill_Policy_Area).all()
+    for area in all_areas:
+        print(area)
+
+def get_all_policy_areas(session):
+    smnt = (select(Bill_Policy_Area))
+    return session.execute(smnt).scalars().all()
+
 class Bill_Policy_Area(Base):
     __tablename__ = "bill_policy_areas"
     bill_chamber = mapped_column(String, primary_key=True)
@@ -123,29 +175,6 @@ class Bill_Policy_Area(Base):
     def __str__(self):
         return self.policy_area
 
-
-def print_bills(session):
-    print("Printing Bills")
-    all_bills = session.query(Bill).all()
-
-    for bill in all_bills:
-        print(bill)
-        for version in bill.versions:
-            print(version)
-            for area in version.policy_areas:
-                print(area)
-
-def print_versions(session):
-    print("Printing Versions")
-    all_versions = session.query(Bill_Version).all()
-    for version in all_versions:
-        print(version)
-
-def print_policy_areas(session):
-    print("Printing Policy Areas")
-    all_areas = session.query(Bill_Policy_Area).all()
-    for area in all_areas:
-        print(area)
 
 
 

@@ -3,6 +3,7 @@ from flask import Flask, render_template
 from server.templates.auth.routes import auth_bp
 from server.templates.pref.routes import pref_bp
 from server.templates.admin.routes import admin_bp
+from server.templates.bills.routes import bill_bp
 
 from config.database import DATABASE_URL
 from server.sql_conn import db
@@ -25,6 +26,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(pref_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(bill_bp)
 
     @app.route("/")
     def index():

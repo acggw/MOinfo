@@ -5,7 +5,7 @@ from sqlalchemy import select
 from database.tables.government import Government
 import os
 from database.tables.government_names import govt_names
-from database.tables.user import create_admin
+from database.tables.user import create_admin, create_user, set_preference
 from config.database import DATABASE_LOCATION
 
 def create_database():
@@ -52,6 +52,8 @@ if __name__ == "__main__":
     create_database()
     with Session(engine) as session:
         setup_united_states(session)
-        create_admin(session, "lucas", "Br!singr^sf1re", "lucasjamesnavarro@gmail.com", "314-285-2963")
+        create_admin(session, "lucas", "Br!singr^sf1re", "", "")
+        create_user(session, "JohnnyTest", "Badpword", email="lucasjamesnavarro@gmail.com", email_nots=True, phone="314-285-2963", phone_nots=True)
+        set_preference(session, "JohnnyTest", "Economics and Public Finance", 1)
 
         session.commit()

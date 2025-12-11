@@ -1,14 +1,13 @@
-from classification_models.predict import predict_more_likely_than_p
-from classification_models.models import bill_classificiation_tfidf_model
-from config.training import POLICY_AREA_CERTAINTY
-
+from classification_models.predict import predict_areas
+from database.tables.bills import Bill_Policy_Area
 
 #Adds bill classes to sql_session
 def classify_bill(sql_session, bill_version):
-    return True
-    policy_areas = predict_more_likely_than_p(bill_classificiation_tfidf_model, bill_version.text, p=POLICY_AREA_CERTAINTY)
+    policy_areas = predict_areas(bill_version.text)
+    if len(policy_areas) == 0:
+        print("No policy areas identified")
     for policy_area in policy_areas:
-        sql_session.add(
+        sql_session.add(Bill_Policy_Area(
             bill_chamber = bill_version.bill_chamber,
             under = bill_version.under,
             bill_session = bill_version.bill_session,
@@ -16,5 +15,6 @@ def classify_bill(sql_session, bill_version):
             bill_version = bill_version.version,
             policy_area = policy_area,
             version = bill_version
+        )
         )
     return True
