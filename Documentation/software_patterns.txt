@@ -1,0 +1,3 @@
+Factory Method Pattern
+    Singleton MOinfo has the internal structure of a package with many small programs
+    Database connections are served to other programs using a facotry program 

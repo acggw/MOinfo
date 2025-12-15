@@ -1,0 +1,20 @@
+Presentation Layer
+    -server/app.py
+        Website where users can submit their preferences and see information about bill
+    -notifications/emails.py
+        Sends emails to users with information on Bill Actions
+Application Layer
+    -backend/application.py
+        Starts and monitors all services
+    -kafka_server
+        Creates a kafka server to handle event driven archicitecture
+    -backend/clock.py
+        Creates events at shceduled times to ensure information stays fresh
+Buisness Logic Layer
+    All services
+        Handle the getting of new bill_actions, processing of new users and preference changes
+        Handle the creation of notifications and directs them to the correct users
+Database Layer
+    Database/ 
+        Creates and stores a SQLite database using SQLalchemy
+        Stores all information
