@@ -9,7 +9,7 @@ services = [
     #"notifications/emails.py",
     "notifications/notifications.py",
     "notifications/emails.py",
-    "Scripts/website_updates.py",
+    #"Scripts/website_updates.py",
 ]
 
 def start_all():
