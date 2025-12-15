@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <title>{{bill.chamber}} - {{bill.session}} - {{bill.id}}</title>
+</head>
+<body>
+    <div>
+        <span>
+            <h1>{{bill.short_title}}</h1>
+            <h2>{{bill.long_title}}</h2>
+            <p>{{bill.description}}</p>
+        </span>
+        <span>
+            <h2>{{bill.chamber}}</h2>
+            <h3>{{bill.session}}</h3>
+        </span>
+    </div>
+    <div>
+        <span>
+            {% if bill.versions %}
+                <ol>
+                    {% for version in bill.versions %}
+                    <li>
+                        <strong>{{version.version}} - {{version.version_string}}</strong>
+                        <p>{{version.summary}}</p><br>
+                        {% if version.policy_areas %}
+                            <ol>
+                                {% for policy_area in version.policy_areas %}
+                                    <li>{{policy_area.policy_area}}</li>
+                                {% endfor %}
+                            </ol>
+                        {% endif %}
+                        <p>{{version.text}}</p>
+                    </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </span>
+        <span>
+            {% if bill.actions %}
+                <ol>
+                    {% for action in bill.actions %}
+                        <li>{{ action.guid }} - {{ action.description }}</li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </span>
+    </div>
+</body>
+{% endblock %}
+

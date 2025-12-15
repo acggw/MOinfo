@@ -1,0 +1,8 @@
+venv
+test
+database/database.db
+bill_subject_predictions.csv
+bill_topic_binarizer_tf-idf.pkl
+bill_topic_classifier_tf-idf.pkl
+classification_models/bill_topic_binarizer_tf-idf.pkl
+classification_models/bill_topic_classifier_tf-idf.pkl

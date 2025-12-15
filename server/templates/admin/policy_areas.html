@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <title>Policy Areas</title>
+</head>
+<body>
+    <h1>Area List</h1>
+    <ul>
+        {% for area in areas %}
+            <li>
+                <strong>{{area.policy_area}} - {{ area.bill_session }}, {{ area.bill_chamber }}, {{area.bill_id}}</strong>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+{% endblock %}
+

@@ -1,0 +1,1 @@
+LOGS_PATH = "/home/lucas/MOinfo/logs"

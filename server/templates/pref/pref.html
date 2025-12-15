@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Preferences</title>
+    <style>
+        .category-item { margin-bottom: 8px; }
+        .interest-select { margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Select Your Interests</h1>
+
+    <input type="text" id="search" placeholder="Search categories..." onkeyup="filterCategories()">
+    
+    <form method="POST">
+        <div id="categories-list">
+            {% for category in categories %}
+            <div class="category-item">
+                <input type="checkbox" name="category" value="{{ category }}" id="cat_{{ loop.index }}" onchange="toggleInterest(this, '{{ category }}')">
+                <label for="cat_{{ loop.index }}">{{ category }}</label>
+                
+                <!-- Interest dropdown hidden by default -->
+                <select name="interest_{{ category }}" class="interest-select" id="interest_{{ category }}" style="display:none;">
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                </select>
+            </div>
+            {% endfor %}
+        </div>
+        <br>
+        <button type="submit">Save Preferences</button>
+    </form>
+
+    <script>
+        function filterCategories() {
+            const searchInput = document.getElementById('search').value.toLowerCase();
+            const categories = document.querySelectorAll('.category-item');
+            
+            categories.forEach(item => {
+                const label = item.querySelector('label').innerText.toLowerCase();
+                if (label.includes(searchInput)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function toggleInterest(checkbox, category) {
+            const select = document.getElementById('interest_' + category);
+            select.style.display = checkbox.checked ? 'inline' : 'none';
+        }
+    </script>
+</body>
+</html>
+
+{% endblock %}

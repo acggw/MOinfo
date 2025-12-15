@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<head>
+    <title>Bills</title>
+</head>
+<body>
+    <h1>Bill List</h1>
+    <ul>
+        {% for bill in bills %}
+            <li>
+                <strong>{{ bill.session }}, {{ bill.chamber }}, {{ bill.under }}, {{bill.id}}</strong>
+                <p>{{ bill.short_title}}</p>
+                {% if bill.actions %}
+                    <ul>
+                        {% for action in bill.actions %}
+                            <li>{{ action.guid }} - {{ action.description }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+{% endblock %}
+

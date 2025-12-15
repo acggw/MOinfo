@@ -1,0 +1,14 @@
+Get Bills
+    Get Bills retreives information from the Missouri House and Senate about pending legislation
+
+    get_bills(date, current_time="today")
+        This function returns a list of notifications pulling any updates in between date and current time from both the Missouri House and Senate
+        If current_time is left empty the current date is used by default
+
+    get_house_bills(date, current_time="today")
+        This function returns a list of notifications pulling any updates in between date and current time from the Missouri House
+        If current_time is left empty the current date is used by default
+
+    get_senate_bills(date, current_time="today")
+        This function returns a list of notifications pulling any updates in between date and current time from the Missouri Senate
+        If current_time is left empty the current date is used by default

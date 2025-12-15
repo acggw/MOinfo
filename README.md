@@ -1,2 +1,4 @@
 # MoInfo
-Generates reports on legislation in the Missouri and United States Congresses
+Created by Alina Carrillo, Sydney Moeller, Lucas Navarro
+## Description
+MoInfo is a service that notify's users of new legislation and representative's voting records in the Missouri Congress. It does this using a program that takes information from Missouri's House and Senate via there individual API's. The bills are then be categorized with BM25 and store the information on a SQL database. There is also be a program to send out notifications to users that sign up with their emails and topics of interest also stored on a SQL database. They are able to sign up through a website that also stores brief summaries of the bills and individual representatives voting histories. Finally, the website contains interactive features that allow the users to leave comments and interact with each other. 
